@@ -20,9 +20,18 @@ func main() {
 
 	forum.DB = db
 	if err != nil {
-		panic(err.Error())
+		db.Close()
+		log.Fatal("Error: ", err)	
 	}
+	// to close db when panic
+	defer func() {
+		if err := recover(); err != nil {
+			db.Close()
+			log.Fatal("Error: ", err)
+		}
+	}()
 
+	// to close db when ctrl+c
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	go func() {
@@ -32,12 +41,7 @@ func main() {
 		os.Exit(0)
 	}()
 
-	defer func() {
-		if err := recover(); err != nil {
-			db.Close()
-			log.Fatal("Error: ", err)
-		}
-	}()
+
 	creation, err := os.ReadFile("db/creation.sql")
 	if err != nil {
 		panic(err.Error())
